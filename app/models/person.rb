@@ -75,7 +75,7 @@ class Person
     raise "Don't change a key" if serialized_key
     @serialized_key = new_key
   end
-
+#### webfinger stuff
   def self.by_webfinger( identifier, opts = {})
     #need to check if this is a valid email structure, maybe should do in JS
     local_person = Person.first(:diaspora_handle => identifier.gsub('acct:', '').to_s.downcase)
@@ -96,10 +96,45 @@ class Person
        Person.from_webfinger_profile(identifier, f )
      end
   end
+  
+  
+  def xrd_url(domain, ssl = false)
+    "http#{'s' if ssl}://#{domain}/.well-known/host-meta"
+  end
+
+  def swizzle(account, template)
+    template.gsub '{uri}', account
+  end
+  
+  def self.webfinger(identifier)
+    domain = identifier.split('@')[1] # get after the email address
+    
+      xrd = EventMachine::HttpRequest.new(xrd_url(domain)).get :timeout => 5
+      xrd.callback {
+        doc = Nokogiri::XML::Document.parse(xrd.response)  
+        puts doc.to_s    
+        webfinger_profile_url = swizzle account, doc.at('Link[rel=lrdd]').attribute('template').value 
+
+        webfinger_profile = EventMachine::HttpRequest.new(webfinger_profile_url).get :timeout => 5
+
+          webfinger_profile.callback {
+            Person.from_webfinger(identifier, webfinger_profile.response)
+          }
+
+          webfinger_profile.errback {
+            puts "no webfinger found for that user"}
+          }
+      }
+       xrd.errback {
+         puts "no xrd found"
+       }
+  end
+  
+  
 
   def self.from_webfinger_profile( identifier, profile)
     new_person = Person.new
-
+    
     public_key_entry = profile.links.select{|x| x.rel == 'diaspora-public-key'}
     
     return nil unless public_key_entry
@@ -122,6 +157,9 @@ class Person
       nil
     end
   end
+
+##end webfinger stuff
+
 
   def remote?
     owner.nil?
