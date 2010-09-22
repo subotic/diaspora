@@ -32,37 +32,36 @@ class RequestsController < ApplicationController
 
   def create
     aspect = current_user.aspect_by_id(params[:request][:aspect_id])
-
-    begin
-      rel_hash = relationship_flow(params[:request][:destination_url])
-    rescue Exception => e
-      raise e unless e.message.include? "not found"
-      flash[:error] = "No diaspora seed found with this email!"
-      respond_with :location => aspect
-      return
-    end
-
-
-
-    # rel_hash = {:friend => params[:friend_handle]}
-    Rails.logger.debug("Sending request: #{rel_hash}")
-
-    begin
-      @request = current_user.send_friend_request_to(rel_hash[:friend], aspect)
-    rescue Exception => e
-      raise e unless e.message.include? "already friends"
-      flash[:notice] = "You are already friends with #{params[:request][:destination_url]}!"
-      respond_with :location => aspect
-      return
-    end
-
-    if @request
-      flash[:notice] =  "A friend request was sent to #{@request.destination_url}."
-      respond_with :location => aspect
-    else
-      flash[:error] = "Something went horribly wrong."
-      respond_with :location => aspect
-    end
+    rel_hash = {:friend => params[:request][:friend_handle]}
+    # begin
+    #   rel_hash = relationship_flow(params[:request][:destination_url])
+    # rescue Exception => e
+    #   raise e unless e.message.include? "not found"
+    #   flash[:error] = "No diaspora seed found with this email!"
+    #   respond_with :location => aspect
+    #   return
+    # end
+    puts "sending a request to " + rel_hash[:friend]
+    # Rails.logger.debug("Sending request: #{rel_hash}")
+    # 
+    # begin
+    #   @request = current_user.send_friend_request_to(rel_hash[:friend], aspect)
+    # rescue Exception => e
+    #   raise e unless e.message.include? "already friends"
+    #   flash[:notice] = "You are already friends with #{params[:request][:destination_url]}!"
+    #   respond_with :location => aspect
+    #   return
+    # end
+    # 
+    # if @request
+    #   flash[:notice] =  "A friend request was sent to #{@request.destination_url}."
+    #   respond_with :location => aspect
+    # else
+    #   flash[:error] = "Something went horribly wrong."
+    #   respond_with :location => aspect
+    # end
+    
+    render :nothing => true
   end
 
 end

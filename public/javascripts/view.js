@@ -40,6 +40,13 @@ $(document).ready(function(){
       $(this).fadeTo('fast', '0.5');
     }
   );
+  
+  $(".button", ".new_request").live("click", function() {    
+    $.get("/finger", {webfinger_handle : 'danielgrippi@gmail.com'},
+       function(data){
+         alert("Data Loaded: " + data);
+       });
+	});
 
 });//end document ready
 
@@ -59,4 +66,6 @@ $.fn.clearForm = function() {
   $(this).blur();
   });
 };
+
+
 

@@ -1,6 +1,7 @@
-require 'sinatra/async'
-
 class AsyncController < Sinatra::Base
+  require 'sinatra/async'
+  require 'eventmachine'
+  require 'em-http'
   register Sinatra::Async
 
   aget '/finger' do
@@ -9,14 +10,14 @@ class AsyncController < Sinatra::Base
     xrd = EventMachine::HttpRequest.new(xrd_url(domain)).get :timeout => 5
       xrd.callback {
         doc = Nokogiri::XML::Document.parse(xrd.response)  
-        puts doc.to_s    
         webfinger_profile_url = swizzle account, doc.at('Link[rel=lrdd]').attribute('template').value 
         
         webfinger_profile = EventMachine::HttpRequest.new(webfinger_profile_url).get :timeout => 5
       
         webfinger_profile.callback {
-          puts webfinger_profile.response
-          body { webfinger_profile.response} 
+          
+          puts webfinger_profile.response.to_s
+          body {render webfinger_profile.response} 
         }
       
         webfinger_profile.errback {

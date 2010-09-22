@@ -27,6 +27,7 @@ gem 'pubsubhubbub'
 gem 'redfinger', :git => 'git://github.com/rsofaer/redfinger.git'
 
 #EventMachine
+gem 'eventmachine'
 gem 'em-http-request',:git => 'git://github.com/igrigorik/em-http-request.git', :require => 'em-http'
 gem 'thin'
 

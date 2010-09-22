@@ -252,6 +252,7 @@ DEPENDENCIES
   devise!
   em-http-request!
   em-websocket
+  eventmachine
   factory_girl_rails
   haml
   jnunemaker-validatable (= 1.8.4)!
