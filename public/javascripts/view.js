@@ -54,7 +54,9 @@ $(document).ready(function(){
 
 $(".button", ".new_request").live("click", function() {    
 
-  var email = $(this).closest("#new_request").children("p").children("input").val();
+  var email = $(this).closest(".new_request").children("p").children("input").val();
+  alert(email);
+
   
   $.ajax({
          url: '/finger',
