@@ -13,15 +13,15 @@ class RequestsController < ApplicationController
     if params[:accept]
       if params[:aspect_id]
         @friend = current_user.accept_and_respond( params[:id], params[:aspect_id])
-        flash[:notice] = "You are now friends."
+        flash[:notice] = I18n.t 'requests.destroy.success'
         respond_with :location => current_user.aspect_by_id(params[:aspect_id])
       else
-        flash[:error] = "Please select an aspect!"
+        flash[:error] = I18n.t 'requests.destroy.error'
         respond_with :location => requests_url
       end
     else
       current_user.ignore_friend_request params[:id]
-      flash[:notice] = "Ignored friend request."
+      flash[:notice] = I18n.t 'requests.destroy.ignore'
       respond_with :location => requests_url
     end
   end
@@ -62,7 +62,6 @@ class RequestsController < ApplicationController
     #   respond_with :location => aspect
     # end
     
-
   end
 
 end
