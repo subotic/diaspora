@@ -180,7 +180,6 @@ def self.from_webfinger_profile( identifier, profile)
              new_person.url = l.attribute("href").value
         end
       end
-              
       pubkey = doc.at('Link[rel=diaspora-public-key]').attribute('href').value
       return false if pubkey.nil?
       new_person.profile = Profile.new(:first_name => "unknown", :last_name => "person")
