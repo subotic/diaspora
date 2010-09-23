@@ -37,7 +37,7 @@ module ApplicationHelper
     when "Person"
       person_path(person)
     else
-      "unknown person"
+      I18n.t('application.helper.unknown_person')
     end
   end
 
@@ -57,11 +57,15 @@ module ApplicationHelper
   end
 
   def person_image_link(person)
-    link_to person_image_tag(person), object_path(person)
+    if current_user.friends.include?(person) || current_user.person == person
+      link_to person_image_tag(person), object_path(person)
+    else
+      person_image_tag person
+    end
   end
 
   def new_request(request_count)
-    "new_requests" if request_count > 0
+    I18n.t('application.helper.new_requests') if request_count > 0
   end
 
   def post_yield_tag(post)
