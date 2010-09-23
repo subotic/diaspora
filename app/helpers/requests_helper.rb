@@ -7,7 +7,7 @@ module RequestsHelper
   def relationship_flow(identifier)
     action = :none
     person = nil
-    person = Person.by_webfinger identifier
+    person = Person.from_webfinger identifier
     if person
       action = (person == current_user.person ? :none : :friend)
     end
