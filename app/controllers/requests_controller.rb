@@ -32,6 +32,7 @@ class RequestsController < ApplicationController
 
   def create
     aspect = current_user.aspect_by_id(params[:request][:aspect_id])
+
     rel_hash = {:friend => params[:request][:friend_handle]}
     # begin
     #   rel_hash = relationship_flow(params[:request][:destination_url])
@@ -61,7 +62,7 @@ class RequestsController < ApplicationController
     #   respond_with :location => aspect
     # end
     
-    render :nothing => true
+
   end
 
 end

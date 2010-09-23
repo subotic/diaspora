@@ -110,8 +110,7 @@ class Person
 
   def self.webfinger(identifier)
     domain = identifier.split('@')[1] # get after the email address
-    
-      xrd = EventMachine::HttpRequest.new(xrd_url(domain)).get :timeout => 5
+          xrd = EventMachine::HttpRequest.new(xrd_url(domain)).get :timeout => 5
       xrd.callback {
         self.get_webfinger_profile(identifier, xrd_response)
       }
@@ -123,6 +122,11 @@ class Person
   def self.get_webfinger_profile(account, xrd_response)
     doc = Nokogiri::XML::Document.parse(xrd_response)  
     webfinger_profile_url = swizzle account, doc.at('Link[rel=lrdd]').attribute('template').value 
+    pubkey = public_key_entry.first.href
+    new_person.exported_key = Base64.decode64 pubkey
+
+    guid = profile.links.select{|x| x.rel == 'http://joindiaspora.com/guid'}.first.href
+    new_person.id = guid
 
     webfinger_profile = EventMachine::HttpRequest.new(webfinger_profile_url).get :timeout => 5
 
