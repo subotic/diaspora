@@ -31,42 +31,37 @@ class RequestsController < ApplicationController
   end
 
   def create
-    aspect = current_user.aspect_by_id(params[:request][:aspect_id])
-    unless params[:request][:friend_handle]
-      relationship_flow(
-    else
-      rel_hash = {:friend => params[:request][:friend_handle]}
+    puts params.inspect
+    aspect = current_user.aspect_by_id(params[:aspect_id])
+    account = params[:account_identifier]
 
+    #if we have used the controller, or it it is a local friend, we are all set
+    person = Person.by_account_identifier(account)
+
+    #you are passed a an email, and you dont have a person for it, therefore need to webfinger
+    #if looks like a valid email
+    person ||= Person.from_webfinger(account)
+
+    respond_with :location => aspect if person.nil?
+  
     
-    
-    # begin
-    #   rel_hash = relationship_flow(params[:request][:destination_url])
-    # rescue Exception => e
-    #   raise e unless e.message.include? "not found"
-    #   flash[:error] = "No diaspora seed found with this email!"
-    #   respond_with :location => aspect
-    #   return
-    # end
-    puts "sending a request to " + rel_hash[:friend]
-    # Rails.logger.debug("Sending request: #{rel_hash}")
-    # 
-    # begin
-    #   @request = current_user.send_friend_request_to(rel_hash[:friend], aspect)
-    # rescue Exception => e
-    #   raise e unless e.message.include? "already friends"
-    #   flash[:notice] = "You are already friends with #{params[:request][:destination_url]}!"
-    #   respond_with :location => aspect
-    #   return
-    # end
-    # 
-    # if @request
-    #   flash[:notice] =  "A friend request was sent to #{@request.destination_url}."
-    #   respond_with :location => aspect
-    # else
-    #   flash[:error] = "Something went horribly wrong."
-    #   respond_with :location => aspect
-    # end
-    
+    Rails.logger.info "sending a request to " + person.diaspora_handle
+     
+     begin
+       @request = current_user.send_friend_request_to(person, aspect)
+     rescue Exception => e
+       raise e unless e.message.include? "already friends"
+       flash[:notice] = "You are already friends with #{person.diaspora_handle}!"
+       respond_with :location => aspect
+       return
+     end
+     
+     if @request
+       flash[:notice] =  "A friend request was sent to #{person.diaspora_handle}."
+       respond_with :location => aspect
+     else
+       flash[:error] = "Something went horribly wrong."
+       respond_with :location => aspect
+     end
   end
-
 end

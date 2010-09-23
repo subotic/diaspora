@@ -9,6 +9,8 @@ class Async
   def self.call(env)
     
     # Get the headers out there asap, let the client know we're alive...
+
+      puts "cooleabsn"
       
       account = env['QUERY_STRING'].dup
       account = account.split('=')[1]

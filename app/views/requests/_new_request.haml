@@ -6,16 +6,15 @@
   =t('.add_a_new_friend_to')
   %i= aspect.name
 
-= form_for Request.new do |f|
-  = f.error_messages
+= form_tag('/requests', :class => 'new_request') do
 
   =t('.enter_a_diaspora_username')  
   %br
   %i= t '.your_diaspora_username_is', :diaspora_handle  => current_user.diaspora_handle
 
   %p
-    = f.label :destination_url, t(".friends_username")
-    = f.text_field :destination_url
-  = f.hidden_field :aspect_id, :value => aspect.id
-  = f.submit
+    = label_tag :account_identifier, t(".friends_username")
+    = text_field_tag :account_identifier
+  = hidden_field_tag :aspect_id, aspect.id
+  = submit_tag
 

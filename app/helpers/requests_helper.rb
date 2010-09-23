@@ -7,7 +7,12 @@ module RequestsHelper
   def relationship_flow(identifier)
     action = :none
     person = nil
-    person = Person.from_webfinger identifier
+
+
+    if identifier.contains?('@')#prob an email
+      person = Person.from_webfinger identifier
+    end
+
     if person
       action = (person == current_user.person ? :none : :friend)
     end
