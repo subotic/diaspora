@@ -171,18 +171,14 @@ describe Person do
       tom = Person.by_webfinger('tom@tom.joindiaspora.com')
       tom.real_name.include?("Hamiltom").should be true
     end
-
-    describe 'wall posting' do
-      it 'should be able to post on another persons wall' do
-        pending
-        #user2 is in user's aspect, user is in aspect2 on user
-        friend_users(@user, @aspect, @user2, @aspect2)
-
-        @user.person.post_to_wall(:person => @user2.person, :message => "youve got a great smile")
-        @user.person.wall_posts.count.should == 1
-
+    
+    describe 'parsing from a webfinger profile' do
+      it 'should create a valid person stub from a full webfinger profile' do
+        person = Person.from_webfinger_nokogiri("tom@tom.joindiaspora.com", finger_xrd)
+        person.valid?.should == true
       end
+    
     end
-
+    
   end
 end

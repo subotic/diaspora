@@ -23,8 +23,7 @@ class Async
             webfinger_profile = EventMachine::HttpRequest.new(webfinger_profile_url).get :timeout => 5
 
             webfinger_profile.callback {
-              puts webfinger_profile.response
-              puts "i made it!!!  "
+            
               env["async.callback"].call [200, {'Content-Type' => 'text/plain'}, body]
               body.call [webfinger_profile.response]
               body.succeed
