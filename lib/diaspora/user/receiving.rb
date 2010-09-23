@@ -2,15 +2,12 @@ module Diaspora
   module UserModules
     module Receiving
       def receive_salmon ciphertext
-        #this sucks
-        Thread.new do
           cleartext = decrypt( ciphertext)
           salmon = Salmon::SalmonSlap.parse cleartext
           if salmon.verified_for_key?(salmon.author.public_key)
             Rails.logger.info("data in salmon: #{salmon.data}")
             self.receive(salmon.data)
           end
-        end
       end
 
       def receive xml
