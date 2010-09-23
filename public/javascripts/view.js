@@ -41,15 +41,28 @@ $(document).ready(function(){
     }
   );
   
-  $(".button", ".new_request").live("click", function() {    
-    $.get("/finger", {webfinger_handle : 'danielgrippi@gmail.com'},
-       function(data){
-         alert("Data Loaded: " + data);
-       });
-	});
+
 
 });//end document ready
 
+
+$(".button", ".new_request").live("click", function() {    
+  var email = 
+  $.ajax({
+         url: '/finger',
+         type: 'GET',
+         data: "webfinger_identifier=tom@tom.joindiaspora.com",
+         async: false,
+         timeout: 30000,
+         error: function(){
+             alert("you suck")
+         },
+         success: function(msg){ 
+            alert(msg);
+            //set diaspora handle to the form submission and send it off!
+         }
+     });
+});
 
 //Called with $(selector).clearForm()
 $.fn.clearForm = function() {
