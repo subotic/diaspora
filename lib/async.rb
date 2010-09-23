@@ -5,7 +5,6 @@ class Async
     
     # Get the headers out there asap, let the client know we're alive...
       
-      puts env['QUERY_STRING']
       account = env['QUERY_STRING'].dup
       account = account.split('=')[1]
       account = account.gsub('%40', '@')

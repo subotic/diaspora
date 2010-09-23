@@ -53,11 +53,13 @@ $(document).ready(function(){
 
 
 $(".button", ".new_request").live("click", function() {    
-  var email = 
+
+  var email = $(this).closest("#new_request").children("p").children("input").val();
+  
   $.ajax({
          url: '/finger',
          type: 'GET',
-         data: "webfinger_identifier=tom@tom.joindiaspora.com",
+         data: "webfinger_identifier="+email,
          async: false,
          timeout: 30000,
          error: function(){

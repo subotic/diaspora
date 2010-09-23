@@ -53,10 +53,35 @@
       = p.label :last_name 
       = p.text_field :last_name, :value => @profile.last_name
 
+  %br
+  %br
+
+
+    
+
   #submit_block
     = link_to "Cancel", root_path
     or
     = f.submit "Update Profile"
+    
+
+
+%h2 Services
+
+%h3 Facebook
+%p
+  - if @logged_in
+    Connected to facebook as 
+    - @response_hash = MiniFB.get(@access_token, 'me')
+    = @response_hash[:name]
+
+    - form_tag "/services/fb_post" do
+      = text_area_tag "message"
+      = submit_tag "send it off"
+
+    = link_to "Disconnect from Facebook", services_destroy_path
+  - else
+    = link_to "Connect to Facebook", @fb_access_url
 
 #content_bottom
   .back
