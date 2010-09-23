@@ -36,7 +36,7 @@ Diaspora::Application.routes.draw do
   match 'signup', :to => 'registrations#new',        :as => "new_user_registration"
 
   match 'get_to_the_choppa', :to => redirect("/signup") 
-  match "/finger", :to =>  Async
+  match "finger", :to =>  Async
   match 'webfinger', :to => 'publics#webfinger'
   match 'hcard/users/:id',    :to => 'publics#hcard'
 
