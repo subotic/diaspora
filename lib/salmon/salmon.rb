@@ -94,7 +94,7 @@ ENTRY
       if @author
         @author
       else
-        Person.by_webfinger @author_email
+        Person.from_webfinger @author_email
       end
     end
 
