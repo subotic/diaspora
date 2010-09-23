@@ -2,10 +2,17 @@
 #   licensed under the Affero General Public License version 3.  See
 #   the COPYRIGHT file.
 
+
+<<<<<<< HEAD
+require 'lib/diaspora/user/friending.rb'
+require 'lib/diaspora/user/querying.rb'
+require 'lib/diaspora/user/receiving.rb'
+require 'lib/salmon/salmon'
+=======
 require File.expand_path('../../../lib/diaspora/user/friending', __FILE__)
 require File.expand_path('../../../lib/diaspora/user/querying', __FILE__)
-require File.expand_path('../../../lib/diaspora/user/receiving', __FILE__)
 require File.expand_path('../../../lib/salmon/salmon', __FILE__)
+>>>>>>> manveru/master
 
 class User
   include MongoMapper::Document
@@ -119,12 +126,6 @@ class User
     aspect_ids = validate_aspect_permissions(options[:to])
     push_to_aspects(post, aspect_ids)
     post
-  end
-
-  def update_post( post, post_hash = {} )
-    if self.owns? post
-      post.update_attributes(post_hash)
-    end
   end
 
   def validate_aspect_permissions(aspect_ids)
@@ -257,10 +258,23 @@ class User
     aspect(:name => "Family")
     aspect(:name => "Work")
   end
+<<<<<<< HEAD
   
+=======
+
+  def self.create(opts ={})
+    puts opts.inspect
+  end
+
+>>>>>>> manveru/master
+  def terse_url
+    terse = APP_CONFIG[:pod_url].gsub(/(https?:|www\.)\/\//, '')
+    terse = terse.chop! if terse[-1, 1] == '/'
+    terse
+  end
 
   def diaspora_handle
-    "#{self.username}@#{APP_CONFIG[:terse_pod_url]}"
+    "#{self.username}@#{self.terse_url}"
   end
 
   def downcase_username
