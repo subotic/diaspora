@@ -2,11 +2,14 @@ module Diaspora
   module UserModules
     module Receiving
       def receive_salmon ciphertext
-        cleartext = decrypt( ciphertext)
-        salmon = Salmon::SalmonSlap.parse cleartext
-        if salmon.verified_for_key?(salmon.author.public_key)
-          Rails.logger.info("data in salmon: #{salmon.data}")
-          self.receive(salmon.data)
+        #this sucks
+        Thread.new do
+          cleartext = decrypt( ciphertext)
+          salmon = Salmon::SalmonSlap.parse cleartext
+          if salmon.verified_for_key?(salmon.author.public_key)
+            Rails.logger.info("data in salmon: #{salmon.data}")
+            self.receive(salmon.data)
+          end
         end
       end
 
@@ -15,17 +18,17 @@ module Diaspora
         Rails.logger.debug("Receiving object for #{self.real_name}:\n#{object.inspect}")
         Rails.logger.debug("From: #{object.person.inspect}") if object.person
 
-        if object.is_a? Retraction
-          receive_retraction object, xml
-        elsif object.is_a? Request
-          receive_request object, xml
-        elsif object.is_a? Profile
-          receive_profile object, xml
-        elsif object.is_a?(Comment)
-          receive_comment object, xml
-        else
-          receive_post object, xml
-        end
+          if object.is_a? Retraction
+            receive_retraction object, xml
+          elsif object.is_a? Request
+            receive_request object, xml
+          elsif object.is_a? Profile
+            receive_profile object, xml
+          elsif object.is_a?(Comment)
+            receive_comment object, xml
+          else
+            receive_post object, xml
+          end
       end
 
       def receive_retraction retraction, xml

@@ -76,29 +76,40 @@ class Person
     @serialized_key = new_key
   end
 
-=begin 
-  def self.by_webfinger( identifier, opts = {})
-    #need to check if this is a valid email structure, maybe should do in JS
-    local_person = Person.first(:diaspora_handle => identifier.gsub('acct:', '').to_s.downcase)
-    
-     if local_person
-       Rails.logger.info("Do not need to webfinger, found a local person #{local_person.real_name}")
-       local_person
-     elsif  !identifier.include?("localhost") && !opts[:local]
-       begin
-        Rails.logger.info("Webfingering #{identifier}")
-        f = Redfinger.finger(identifier)
-       rescue SocketError => e
-         raise "Diaspora server for #{identifier} not found" if e.message =~ /Name or service not known/
-       rescue Errno::ETIMEDOUT => e
-         raise "Connection timed out to Diaspora server for #{identifier}"
-       end
-       raise "No webfinger profile found at #{identifier}" if f.nil? || f.links.empty?
-       Person.from_webfinger_profile(identifier, f )
-     end
+  #webfinger methods
+  def self.by_account_identifier(identifier)
+    self.first(:diaspora_handle => identifier.gsub('acct:', '').to_s.downcase)
   end
 
-  def self.from_webfinger_profile( identifier, profile)
+  def self.local_by_account_identifier(identifier)
+    person = self.by_account_identifier(identifier)
+   (person.nil? || person.remote?) ? nil : person
+  end
+
+  def self.from_webfinger(identifier, opts = {})
+    local_person = self.by_account_identifier(identifier)
+    if local_person
+      Rails.logger.info("Do not need to webfinger, found a local person #{local_person.real_name}")
+      return local_person
+    end
+    unless opts[:webfinger_profile]
+        begin
+        Rails.logger.info("Webfingering #{identifier}")
+        profile = Redfinger.finger(identifier)
+      rescue
+        raise "There was a profile with webfingering #{identifier}"
+      end
+      self.from_webfinger_profile(identifier, profile)
+    else
+      self.from_webfinger_nokogiri(identifier, opts[:webfinger_profile])
+    end
+    # loop here until opts[:webfinger_profile] is not nil
+
+  end
+
+
+
+def self.from_webfinger_profile( identifier, profile)
     new_person = Person.new
 
     public_key_entry = profile.links.select{|x| x.rel == 'diaspora-public-key'}
@@ -123,36 +134,7 @@ class Person
       nil
     end
   end
-=end
 
-    #webfinger methods
-    def self.by_account_identifier(identifier)
-      self.first(:diaspora_handle => identifier.gsub('acct:', '').to_s.downcase)
-    end
-
-    def self.local_by_account_identifier(identifier)
-      person = self.by_account_identifier(identifier)
-     (person.nil? || person.remote?) ? nil : person
-    end
-
-    def self.from_webfinger(identifier, opts = {})
-      local_person = self.by_account_identifier(identifier)
-      if local_person
-        Rails.logger.info("Do not need to webfinger, found a local person #{local_person.real_name}")
-        return local_person
-      end
-      unless opts[:webfinger_profile]
-          begin
-          Rails.logger.info("Webfingering #{identifier}")
-          opts[:webfinger_profile] = self.webfinger(identifier)
-        rescue
-          raise "There was a profile with webfingering #{identifier}"
-        end
-      end
-      #here on out, webfinger_profile is set with a profile
-
-      self.from_webfinger_nokogiri(identifier, opts[:webfinger_profile])
-    end
 
 
     def self.webfinger(identifier)
