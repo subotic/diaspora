@@ -163,12 +163,12 @@ describe Person do
 
     it 'should search by diaspora_handle exactly' do
       stub_success("tom@tom.joindiaspora.com")
-      Person.by_webfinger(@friend_one.diaspora_handle).should == @friend_one
+      Person.from_webfinger(@friend_one.diaspora_handle).should == @friend_one
     end
 
     it 'should create a stub for a remote user' do
       stub_success("tom@tom.joindiaspora.com")
-      tom = Person.by_webfinger('tom@tom.joindiaspora.com')
+      tom = Person.from_webfinger('tom@tom.joindiaspora.com')
       tom.real_name.include?("Hamiltom").should be true
     end
     
