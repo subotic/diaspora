@@ -83,6 +83,16 @@ end
     request = user1.send_friend_request_to(user2.person, aspect1)
     reversed_request = user2.accept_friend_request( request.id, aspect2.id)
     user1.receive reversed_request.to_diaspora_xml
+    
+    u1 = User.find_by_id(user1.id)
+    u2 = User.find_by_id(user2.id)
+    
+    
+    raise "u1 is not friends with u2" unless u1.aspect_by_id(aspect1.id).people.include?(u2.id)
+    raise "u2 is not friends with u1" unless u2.aspect_by_id(aspect1.id).people.include?(u1.id)
+    
+    
+    
   end
 
   def stub_success(address = 'abc@example.com')
