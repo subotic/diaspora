@@ -23,10 +23,10 @@ describe 'making sure the spec runner works' do
     loaded_user = User.first(:id => user.id)
     loaded_user.person.owner_id.should == user.id
   end
+    
   describe 'testing a before do block' do
     before do
       Factory.create(:user)
-
     end
 
     it 'should have cleaned before the before do block runs' do

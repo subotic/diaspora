@@ -9,17 +9,17 @@ namespace :db do
   namespace :seed do
     task :tom do
       puts "Seeding the database for #{Rails.env}..."
-      require 'db/seeds/tom'
+      require './db/seeds/tom'
     end
 
     task :dev do
       puts "Seeding the database for #{Rails.env}..."
-      require 'db/seeds/dev'
+      require './db/seeds/dev'
     end
 
     task :backer do
       puts "Seeding the database for #{Rails.env}..."
-      require 'db/seeds/backer'
+      require './db/seeds/backer'
       create
     end
     
@@ -27,7 +27,7 @@ namespace :db do
 
   desc 'Delete the collections in the current RAILS_ENV database'
   task :purge do
-    require 'config/environment'
+    require './config/environment'
 
     puts "Purging the database for #{Rails.env}..."
 
@@ -57,7 +57,7 @@ namespace :db do
   
   task :fix_diaspora_handle do
     puts "fixing the people in this seed"
-    require 'config/environment'
+    require './config/environment'
     Person.where(:url => 'example.org').all.each{|person|
       if person.owner
         person.url = APP_CONFIG[:pod_url]
