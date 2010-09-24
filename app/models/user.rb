@@ -13,10 +13,13 @@ class User
   include Diaspora::UserModules::Querying
   include Diaspora::UserModules::Receiving
   include Encryptor::Private
+  plugin MongoMapper::Devise
+  
   QUEUE = MessageHandler.new
 
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :trackable, :validatable
+
   key :username, :unique => true
 
   key :friend_ids,          Array

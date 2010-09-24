@@ -10,11 +10,12 @@ gem 'bundler', '1.0.0'
 #gem 'jnunemaker-validatable', '1.8.4', :git => 'http://github.com/jnunemaker/validatable.git'
 
 gem 'mongo_mapper', :git    => 'git://github.com/jnunemaker/mongomapper', :branch => 'rails3'
+gem 'devise', '1.1.3'
 gem 'devise-mongo_mapper', :git => 'git://github.com/collectiveidea/devise-mongo_mapper'
 
 #Mongo
-gem 'bson_ext', '1.0.7'
-gem 'bson', '1.0.7'
+gem 'bson_ext', '1.0.9'
+gem 'bson', '1.0.9'
 
 #Views
 gem 'haml'
