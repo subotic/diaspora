@@ -5,11 +5,14 @@ gem 'bundler', '1.0.0'
 
 
 #Security
-gem 'devise', :git => 'http://github.com/BadMinus/devise.git'
+#gem 'devise', :git => 'http://github.com/BadMinus/devise.git'
+#gem 'mongo_mapper', '0.8.4', :git => 'http://github.com/jnunemaker/mongomapper.git'
+#gem 'jnunemaker-validatable', '1.8.4', :git => 'http://github.com/jnunemaker/validatable.git'
+
+gem 'mongo_mapper', :git    => 'git://github.com/jnunemaker/mongomapper', :branch => 'rails3'
+gem 'devise-mongo_mapper', :git => 'git://github.com/collectiveidea/devise-mongo_mapper'
 
 #Mongo
-gem 'mongo_mapper', '0.8.4', :git => 'http://github.com/jnunemaker/mongomapper.git'
-gem 'jnunemaker-validatable', '1.8.4', :git => 'http://github.com/jnunemaker/validatable.git'
 gem 'bson_ext', '1.0.7'
 gem 'bson', '1.0.7'
 
