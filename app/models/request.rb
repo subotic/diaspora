@@ -1,9 +1,10 @@
 #   Copyright (c) 2010, Diaspora Inc.  This file is
-#   licensed under the Affero General Public License version 3.  See
+#   licensed under the Affero General Public License version 3 or later.  See
 #   the COPYRIGHT file.
 
-class Request
-  require File.expand_path('../../../lib/diaspora/webhooks', __FILE__)
+class Request  
+  require File.join(Rails.root, 'lib/diaspora/webhooks')
+  
   include MongoMapper::Document
   include Diaspora::Webhooks
   include ROXML
@@ -26,7 +27,6 @@ class Request
   before_validation :clean_link
 
   scope :for_user,  lambda{ |user| where(:destination_url    => user.person.receive_url) }
-  scope :from_user, lambda{ |user| where(:destination_url.ne => user.person.receive_url) }
 
   def self.instantiate(options = {})
     person = options[:from]
@@ -47,6 +47,7 @@ class Request
 protected
   def clean_link
     if self.destination_url
+      self.destination_url = self.destination_url.strip
       self.destination_url = 'http://' + self.destination_url unless self.destination_url.match('https?://')
       self.destination_url = self.destination_url + '/' if self.destination_url[-1,1] != '/'
     end

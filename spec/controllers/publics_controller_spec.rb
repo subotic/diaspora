@@ -1,5 +1,5 @@
 #   Copyright (c) 2010, Diaspora Inc.  This file is
-#   licensed under the Affero General Public License version 3.  See
+#   licensed under the Affero General Public License version 3 or later.  See
 #   the COPYRIGHT file.
 
 require 'spec_helper'
@@ -24,13 +24,27 @@ describe PublicsController do
 
       user.reload
       user.visible_post_ids.include?(message.id).should be false
-      
+
       xml = user2.salmon(message).xml_for(user.person)
 
       post :receive, :id => user.person.id, :xml => xml
 
       user.reload
       user.visible_post_ids.include?(message.id).should be true
+    end
+  end
+
+  describe '#hcard' do
+    it 'queries by person id' do
+      post :hcard, :id => user.person.id
+      assigns[:person].should == user.person
+      response.code.should == '200'
+    end
+
+    it 'does not query by user id' do
+      post :hcard, :id => user.id
+      assigns[:person].should be_nil
+      response.code.should == '404'
     end
   end
 

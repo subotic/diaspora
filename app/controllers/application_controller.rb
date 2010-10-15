@@ -1,5 +1,5 @@
 #   Copyright (c) 2010, Diaspora Inc.  This file is
-#   licensed under the Affero General Public License version 3.  See
+#   licensed under the Affero General Public License version 3 or later.  See
 #   the COPYRIGHT file.
 
 class ApplicationController < ActionController::Base
@@ -9,6 +9,7 @@ class ApplicationController < ActionController::Base
   before_filter :set_friends_and_status, :except => [:create, :update]
   before_filter :count_requests
   before_filter :fb_user_info
+  before_filter :set_invites
 
   layout :layout_by_resource
 
@@ -22,9 +23,7 @@ class ApplicationController < ActionController::Base
 
   def set_friends_and_status
     if current_user
-      if params[:action] == 'public'
-        @aspect = :public
-      elsif params[:aspect] == nil || params[:aspect] == 'all'
+      if params[:aspect] == nil || params[:aspect] == 'all'
         @aspect = :all
       else
         @aspect = current_user.aspect_by_id( params[:aspect])
@@ -37,6 +36,12 @@ class ApplicationController < ActionController::Base
 
   def count_requests
     @request_count = Request.for_user(current_user).size if current_user
+  end
+
+  def set_invites
+    if current_user
+      @invites = current_user.invites
+    end
   end
 
   def fb_user_info

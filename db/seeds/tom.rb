@@ -1,5 +1,5 @@
 #   Copyright (c) 2010, Diaspora Inc.  This file is
-#   licensed under the Affero General Public License version 3.  See
+#   licensed under the Affero General Public License version 3 or later.  See
 #   the COPYRIGHT file.
 
 require File.join(File.dirname(__FILE__), "..", "..", "config", "environment")
@@ -41,6 +41,6 @@ user2.person.save!
 aspect = user.aspect(:name => "other dudes")
 request = user.send_friend_request_to(user2, aspect)
 reversed_request = user2.accept_friend_request( request.id, user2.aspect(:name => "presidents").id )
-user.receive reversed_request.to_diaspora_xml
+user.receive reversed_request.to_diaspora_xml, user2.person
 user.aspect(:name => "Presidents")
 

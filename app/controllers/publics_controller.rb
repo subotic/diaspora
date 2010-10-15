@@ -1,9 +1,9 @@
 #   Copyright (c) 2010, Diaspora Inc.  This file is
-#   licensed under the Affero General Public License version 3.  See
+#   licensed under the Affero General Public License version 3 or later.  See
 #   the COPYRIGHT file.
 
 class PublicsController < ApplicationController
-  require File.expand_path('../../../lib/diaspora/parser', __FILE__)
+  require File.join(Rails.root, '/lib/diaspora/parser')
   include Diaspora::Parser
 
   layout false
@@ -12,6 +12,8 @@ class PublicsController < ApplicationController
     @person = Person.find_by_id params[:id]
     unless @person.nil? || @person.owner.nil?
       render 'hcard'
+    else
+      render :nothing => true, :status => 404
     end
   end
 
@@ -24,13 +26,13 @@ class PublicsController < ApplicationController
     unless @person.nil? || @person.owner.nil?
       render 'webfinger', :content_type => 'application/xrd+xml'
     else
-      render :nothing => true
+      render :nothing => true, :status => 404
     end
   end
 
   def hub
     if params['hub.mode'] == 'subscribe' || params['hub.mode'] == 'unsubscribe'
-      render :text => params['hub.challenge'], :status => 202, :layout => false 
+      render :text => params['hub.challenge'], :status => 202, :layout => false
     end
   end
 

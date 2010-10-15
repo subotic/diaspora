@@ -1,25 +1,36 @@
 #   Copyright (c) 2010, Diaspora Inc.  This file is
-#   licensed under the Affero General Public License version 3.  See
+#   licensed under the Affero General Public License version 3 or later.  See
 #   the COPYRIGHT file.
 
-require File.expand_path('../../../lib/diaspora/user/friending', __FILE__)
-require File.expand_path('../../../lib/diaspora/user/querying', __FILE__)
-require File.expand_path('../../../lib/diaspora/user/receiving', __FILE__)
-require File.expand_path('../../../lib/salmon/salmon', __FILE__)
+require File.join(Rails.root, 'lib/diaspora/user')
+require File.join(Rails.root, 'lib/salmon/salmon')
+
+class InvitedUserValidator < ActiveModel::Validator
+  def validate(document)
+    unless document.invitation_token
+      unless document.person
+        document.errors[:base] << "Unless you are being invited, you must have a person"
+      end
+    end
+  end
+end
 
 class User
   include MongoMapper::Document
-  include Diaspora::UserModules::Friending
-  include Diaspora::UserModules::Querying
-  include Diaspora::UserModules::Receiving
+  plugin MongoMapper::Devise
+  include Diaspora::UserModules
   include Encryptor::Private
   QUEUE = MessageHandler.new
 
-  devise :database_authenticatable, :registerable,
+  devise :invitable, :database_authenticatable, :registerable,
          :recoverable, :rememberable, :trackable, :validatable
   key :username, :unique => true
   key :serialized_private_key, String
 
+  key :invites,             Integer, :default => 5
+  key :invitation_token,    String
+  key :invitation_sent_at,  DateTime
+  key :inviter_ids,         Array
   key :friend_ids,          Array
   key :pending_request_ids, Array
   key :visible_post_ids,    Array
@@ -27,6 +38,7 @@ class User
 
   one :person, :class_name => 'Person', :foreign_key => :owner_id
 
+  many :inviters,          :in => :inviter_ids,         :class_name => 'User'
   many :friends,           :in => :friend_ids,          :class_name => 'Person'
   many :visible_people,    :in => :visible_person_ids,  :class_name => 'Person' # One of these needs to go
   many :pending_requests,  :in => :pending_request_ids, :class_name => 'Request'
@@ -37,6 +49,9 @@ class User
   after_create :seed_aspects
 
   before_validation :downcase_username, :on => :create
+  validates_with InvitedUserValidator
+
+  before_destroy :unfriend_everyone, :remove_person
 
    def self.find_for_authentication(conditions={})
     if conditions[:username] =~ /^([\w\.%\+\-]+)@([\w\-]+\.)+([\w]{2,})$/i # email regex
@@ -181,7 +196,7 @@ class User
   end
 
   def push_to_person( person, xml )
-    Rails.logger.debug("Adding xml for #{self} to message queue to #{self.url}")
+    Rails.logger.debug("#{self.real_name} is adding xml to message queue to #{person.receive_url}")
     QUEUE.add_post_request( person.receive_url, xml )
     QUEUE.process
   end
@@ -250,11 +265,83 @@ class User
     end
   end
 
+  ###Invitations############
+  def invite_user( opts = {} )
+    if self.invites > 0
+
+      aspect_id = opts.delete(:aspect_id)
+      if aspect_id == nil
+        raise "Must invite into aspect"
+      elsif !(self.aspects.find_by_id(aspect_id))
+        raise "Must invite to your aspect"
+      end
+      request = Request.instantiate(
+      :to => "http://local_request.example.com",
+      :from => self.person,
+      :into => aspect_id
+      )
+
+      invited_user = User.invite!(:email => opts[:email], :request => request, :inviter => self)
+
+      self.invites = self.invites - 1
+      self.pending_requests << request
+      request.save
+      self.save!
+      invited_user
+    else
+      raise "You have no invites"
+    end
+  end
+
+  def self.invite!(attributes={})
+    inviter = attributes.delete(:inviter)
+    request = attributes.delete(:request)
+
+    invitable = find_or_initialize_with_error_by(:email, attributes.delete(:email))
+    invitable.attributes = attributes
+    if invitable.inviters.include?(inviter)
+      raise "You already invited this person"
+    else
+      invitable.pending_requests << request
+      invitable.inviters << inviter
+    end
+
+    if invitable.new_record?
+      invitable.errors.clear if invitable.email.try(:match, Devise.email_regexp)
+    else
+      invitable.errors.add(:email, :taken) unless invitable.invited?
+    end
+
+    invitable.invite! if invitable.errors.empty?
+    invitable
+  end
+
+  def accept_invitation!( opts = {} )
+    if self.invited?
+      self.username              = opts[:username]
+      self.password              = opts[:password]
+      self.password_confirmation = opts[:password_confirmation]
+      opts[:person][:diaspora_handle] = "#{opts[:username]}@#{APP_CONFIG[:terse_pod_url]}"
+      opts[:person][:url] = APP_CONFIG[:pod_url]
+
+      opts[:serialized_private_key] = User.generate_key
+      self.serialized_private_key =  opts[:serialized_private_key]
+      opts[:person][:serialized_public_key] = opts[:serialized_private_key].public_key
+
+      person_hash = opts.delete(:person)
+      self.person = Person.create(person_hash)
+      self.person.save
+      self.invitation_token = nil
+      self.save
+      self
+    end
+  end
+
   ###Helpers############
   def self.instantiate!( opts = {} )
     opts[:person][:diaspora_handle] = "#{opts[:username]}@#{APP_CONFIG[:terse_pod_url]}"
     opts[:person][:url] = APP_CONFIG[:pod_url]
-    
+
     opts[:serialized_private_key] = generate_key
     opts[:person][:serialized_public_key] = opts[:serialized_private_key].public_key
     User.create(opts)
@@ -288,9 +375,24 @@ class User
   def self.generate_key
     OpenSSL::PKey::RSA::generate 4096
   end
-  
+
   def encryption_key
     OpenSSL::PKey::RSA.new( serialized_private_key )
   end
+  
+  protected
 
+  def remove_person
+    self.person.destroy
+  end
+
+  def unfriend_everyone
+    friends.each{ |friend|
+      if friend.owner?
+        friend.owner.unfriended_by self.person
+      else 
+        self.unfriend friend 
+      end
+    }
+  end
 end

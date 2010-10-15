@@ -5,11 +5,12 @@
 
 class Post
 <<<<<<< HEAD
-  require 'lib/diaspora/websocket'
-  require 'lib/encryptable'
+  require File.expand_path('../../../lib/diaspora/websocket', __FILE__)
+  require File.expand_path('../../../lib/encryptable', __FILE__)
 =======
   require File.expand_path('../../../lib/encryptable', __FILE__)
->>>>>>> manveru/master
+  require File.expand_path('../../../lib/diaspora/websocket', __FILE__)
+>>>>>>> upstream/master
   include MongoMapper::Document
   include ApplicationHelper
   include ROXML
