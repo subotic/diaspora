@@ -6,6 +6,15 @@
 # See http://github.com/svenfuchs/rails-i18n/tree/master/rails%2Flocale for starting points.
 
 en:
+  activemodel:
+      errors:
+          models:
+              user:
+                  attributes:
+                      username:
+                          taken: "is already taken"
+                      email:
+                          taken: "is already taken"
   hello: "Hello world"
   application:
       helper:
@@ -75,8 +84,8 @@ en:
           nobody: "We know you have friends, bring them to Diaspora!"
           nobody_in_aspect: "Your aspect '%{aspect_name}' is empty."
           add_friend: "Add a friend"
-          add_friend_to: "Add a someone to %{aspect_name}"
-          invite: "Invite a someone to join Diaspora!"
+          add_friend_to: "Add someone to %{aspect_name}"
+          invite: "Invite someone to join Diaspora!"
       manage:
           add_a_new_aspect: "Add a new aspect"
           add_a_new_friend:  "Add a new friend"
