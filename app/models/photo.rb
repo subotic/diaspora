@@ -2,13 +2,6 @@
 #   licensed under the Affero General Public License version 3 or later.  See
 #   the COPYRIGHT file.
 
-class PhotoAlbumValidator < ActiveModel::Validator
-  def validate(document)
-    unless document.album.person_id == document.person_id
-      document.errors[:base] << "You post photos to that album"
-    end
-  end
-end
 class Photo < Post
   require 'carrierwave/orm/mongomapper'
   include MongoMapper::Document
@@ -16,29 +9,24 @@ class Photo < Post
 
   xml_accessor :remote_photo
   xml_accessor :caption
-  xml_reader :album_id
 
-  key :album_id, ObjectId
   key :caption,  String
   key :remote_photo_path
   key :remote_photo_name
-
-  belongs_to :album, :class_name => 'Album'
+  key :random_string
 
   timestamps!
 
-  validates_presence_of :album
-  validates_with PhotoAlbumValidator
+  attr_accessible :caption
 
   before_destroy :ensure_user_picture
 
   def self.instantiate(params = {})
-    image_file = params[:user_file]
-    params.delete :user_file
+    photo = super(params)
+    image_file = params.delete(:user_file)
+    photo.random_string = gen_random_string(10)
 
-    photo = Photo.new(params)
     photo.image.store! image_file
-    photo.save
     photo
   end
 
@@ -62,14 +50,31 @@ class Photo < Post
   end
 
   def ensure_user_picture
-    users = Person.all('profile.image_url' => image.url(:thumb_medium) )
-    users.each{ |user|
-      user.profile.update_attributes!(:image_url => nil)
+    people = Person.all('profile.image_url' => absolute_url(:thumb_medium) )
+    people.each{ |person|
+      person.profile.update_attributes(:image_url => nil)
     }
   end
 
   def thumb_hash
-    {:thumb_url => url(:thumb_medium), :id => id, :album_id => album_id}
+    {:thumb_url => url(:thumb_medium), :id => id, :album_id => nil}
+  end
+
+  def mutable?
+    true
+  end
+
+  def absolute_url *args
+    pod_url = APP_CONFIG[:pod_url].dup
+    pod_url.chop! if APP_CONFIG[:pod_url][-1,1] == '/'
+    "#{pod_url}#{url(*args)}"
+  end
+  
+  def self.gen_random_string(len)
+    chars = ("a".."z").to_a + ("A".."Z").to_a + ("0".."9").to_a
+    string = ""
+    1.upto(len) { |i| string << chars[rand(chars.size-1)] }
+    return string
   end
 end
 

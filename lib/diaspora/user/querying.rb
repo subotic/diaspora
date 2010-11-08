@@ -23,10 +23,41 @@ module Diaspora
 
       def visible_person_by_id( id )
         id = id.to_id
-        return self.person if id == self.person.id
-        result = friends.detect{|x| x.id == id }
-        result = visible_people.detect{|x| x.id == id } unless result
-        result
+        if id == self.person.id
+          self.person
+        elsif friend = friends.first(:person_id => id)
+          friend.person
+        else
+          visible_people.detect{|x| x.id == id }
+        end
+      end
+
+      def my_posts
+        Post.where(:diaspora_handle => person.diaspora_handle)
+      end
+
+      def contact_for(person)
+        id = person.id
+        contact_for_person_id(id) 
+      end
+
+      def contact_for_person_id(person_id)
+        friends.first(:person_id => person_id)
+      end
+
+      def friends_not_in_aspect( aspect ) 
+        person_ids = Contact.all(:user_id => self.id, :aspect_ids.ne => aspect._id).collect{|x| x.person_id }
+        Person.all(:id.in => person_ids)
+      end
+
+      def person_objects(contacts = self.friends)
+        person_ids = contacts.collect{|x| x.person_id} 
+        Person.all(:id.in => person_ids)
+      end
+
+      def people_in_aspects(aspects)
+        person_ids = contacts_in_aspects(aspects).collect{|x| x.person_id}
+        Person.all(:id.in => person_ids)
       end
 
       def aspect_by_id( id )
@@ -39,13 +70,12 @@ module Diaspora
       end
 
       def aspects_with_person person
-        id = person.id.to_id
-        aspects.select { |g| g.person_ids.include? id}
+        contact_for(person).aspects
       end
 
-      def people_in_aspects aspects
-        aspects.inject([]) do |found_people,aspect|
-          found_people | aspect.people
+      def contacts_in_aspects aspects
+        aspects.inject([]) do |contacts,aspect|
+          contacts | aspect.people
         end
       end
 
@@ -53,9 +83,6 @@ module Diaspora
         self.aspects.all.collect{|x| x.id}
       end
 
-      def albums_by_aspect aspect
-        aspect == :all ? raw_visible_posts.find_all_by__type("Album") : aspect.posts.find_all_by__type("Album")
-      end
     end
   end
 end

@@ -15,3 +15,13 @@ When /^(.*) in the aspect list$/ do |action|
     When action
   end
 end
+
+Then /^I should see "([^\"]*)" in the main content area$/ do |stuff|
+  within("#stream") do
+    Then "I should see #{stuff}"
+  end
+end
+
+When /^I wait for the home page to load$/ do
+  wait_until { current_path == root_path }
+end

@@ -4,19 +4,18 @@
 
 
 #left_pane
-  #friend_pictures
-    = owner_image_link
-    - for friend in @friends
-      = person_image_link(friend)
-    - if @logged_in && (@aspect == :public)
-      %h3 Facebook Friends
-      - @fb_friends = MiniFB.get(@access_token, 'me', :type => "friends")
-      - @fb_friends[:data].each do |friend|
-        = image_tag( "http://graph.facebook.com/#{friend[:id]}/picture" )
-    -unless (@aspect == :all) || (@aspect == :public)
-      = link_to (image_tag('add_friend_button.png', :height => "50px", :width => "50px")), "#add_request_pane", :id => 'add_request_button'
+  %h2= aspect == :all ? t('.everyone') : aspect
 
-      .yo{:style => 'display:none'}
+  .friend_pictures
+    = owner_image_link
+
+    - for friend in people
+      = person_image_link(friend)
+
+    -unless (aspect == :all)
+      = link_to (image_tag('add_friend_button.png', :title => "#{t('.add_to', :aspect => @aspect)}")), "#add_request_pane", :class => 'add_request_button'
+
+      .fancybox_content
         #add_request_pane
           = render "requests/new_request", :aspect => @aspect
     -else
@@ -26,10 +25,7 @@
 
   %br
   %br
-  %ul
-    %li= link_to 'stream', aspect_path(@aspect)
-    %li= link_to t('.photos'), albums_path(:aspect => @aspect)
-
+  %br
   %br
 
   = render "shared/invitations", :invites => @invites

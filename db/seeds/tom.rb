@@ -3,6 +3,7 @@
 #   the COPYRIGHT file.
 
 require File.join(File.dirname(__FILE__), "..", "..", "config", "environment")
+require File.join(File.dirname(__FILE__), "..", "..", "spec", "helper_methods")
 
 def set_app_config username
   current_config = YAML.load(File.read(Rails.root.join('config', 'app_config.yml.example')))
@@ -14,33 +15,35 @@ def set_app_config username
   file.close
 end
 
-set_app_config "tom"
+set_app_config "tom" unless File.exists?(Rails.root.join('config', 'app_config.yml'))
+
 require 'config/initializers/_load_app_config.rb'
+include HelperMethods
 
 # Create seed user
-user = User.instantiate!( :email => "tom@tom.joindiaspora.com",
+user = User.build( :email => "tom@tom.joindiaspora.com",
                      :username => "tom",
                     :password => "evankorth",
                     :password_confirmation => "evankorth",
                     :person => {
                       :profile => { :first_name => "Alexander", :last_name => "Hamiltom",
-                      :image_url => "http://tom.joindiaspora.com/images/user/tom.jpg"}}
-                  )
+                      :image_url => "http://tom.joindiaspora.com/images/user/tom.jpg"}})
+user.save!
+user.seed_aspects
 user.person.save!
 
-user2 = User.instantiate!( :email => "korth@tom.joindiaspora.com",
+user2 = User.build( :email => "korth@tom.joindiaspora.com",
                     :password => "evankorth",
                     :password_confirmation => "evankorth",
                      :username => "korth",
                     :person => {:profile => { :first_name => "Evan", :last_name => "Korth",
                       :image_url => "http://tom.joindiaspora.com/images/user/korth.jpg"}})
-
+user2.save!
+user2.seed_aspects
 user2.person.save!
-
 # friending users
-aspect = user.aspect(:name => "other dudes")
-request = user.send_friend_request_to(user2, aspect)
-reversed_request = user2.accept_friend_request( request.id, user2.aspect(:name => "presidents").id )
-user.receive reversed_request.to_diaspora_xml, user2.person
-user.aspect(:name => "Presidents")
+aspect = user.aspects.create(:name => "other dudes") 
+aspect2 = user2.aspects.create(:name => "presidents")
 
+friend_users(user, aspect, user2, aspect2)
+user.aspects.create(:name => "Presidents")

@@ -2,7 +2,10 @@
 #   licensed under the Affero General Public License version 3 or later.  See
 #   the COPYRIGHT file.
 
+require 'rubygems'
+require 'eventmachine'
 config = YAML.load_file(File.dirname(__FILE__) + '/deploy_config.yml')
+
 all = config['cross_server']
 
 set :backers,  config['servers']['backer']
@@ -56,9 +59,9 @@ namespace :deploy do
     run "ln -s -f #{shared_path}/app_config.yml #{current_path}/config/app_config.yml"
   end
 
-  task :symlink_fb_config do
-    run "touch #{shared_path}/fb_config.yml"
-    run "ln -s -f #{shared_path}/fb_config.yml #{current_path}/config/fb_config.yml"
+  task :symlink_oauth_keys_config do
+    run "touch #{shared_path}/oauth_keys.yml"
+    run "ln -s -f #{shared_path}/oauth_keys.yml #{current_path}/config/oauth_keys.yml"
   end
 
    task :start do
@@ -134,11 +137,27 @@ namespace :db do
   task :tom_seed, :roles => :tom do
     run "cd #{current_path} && bundle exec rake db:seed:tom --trace RAILS_ENV=#{rails_env}"
     run "curl -silent -u tom@tom.joindiaspora.com:evankorth http://tom.joindiaspora.com/zombiefriends"
-    backers.each do |backer|
-      run "curl -silent -u  #{backer['username']}@#{backer['username']}.joindiaspora.com:#{backer['username']}#{backer['pin']} http://#{backer['username']}.joindiaspora.com/zombiefriendaccept"
-      #run "curl -silent -u  #{backer['username']}@#{backer['username']}.joindiaspora.com:#{backer['username']}#{backer['pin']} http://#{backer['username']}.joindiaspora.com/set_profile_photo"
-    end
+    
+    EM.run { 
+      q = EM::Queue.new 
+      
+      backers.each do |backer|
+        q.push( lambda{run "curl -silent -u  #{backer['username']}@#{backer['username']}.joindiaspora.com:#{backer['username']}#{backer['pin']} http://#{backer['username']}.joindiaspora.com/zombiefriendaccept"})
+        
+      end
+     
+      timer = EventMachine::PeriodicTimer.new(5) do
+        q.pop {|x| x.call}
+        
+        if q.size == 0
+        q.pop {|x| x.call}
+          EventMachine::Timer.new(60) do
+            EM.stop
+          end
+        end
+      end
 
+    }
   end
 
   task :backer_seed, :roles => :backer do
@@ -152,9 +171,8 @@ namespace :db do
     purge
     backer_seed
     tom_seed
-    deploy::restart
   end
 
 end
 
-after "deploy:symlink", "deploy:symlink_images", "deploy:symlink_bundle", 'deploy:symlink_config', 'deploy:symlink_fb_config'
+after "deploy:symlink", "deploy:symlink_images", "deploy:symlink_bundle", 'deploy:symlink_config', 'deploy:symlink_oauth_keys_config'

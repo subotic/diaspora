@@ -2,30 +2,35 @@
 -#   licensed under the Affero General Public License version 3 or later.  See
 -#   the COPYRIGHT file.
 
-= javascript_include_tag 'FABridge', 'swfobject', 'web_socket'
+= javascript_include_tag 'vendor/FABridge', 'vendor/swfobject', 'vendor/web_socket'
 :javascript
-  WebSocket.__swfLocation = "/javascripts/WebSocketMain.swf";
+  WebSocket.__swfLocation = "#{javascript_path 'vendor/WebSocketMain.swf'}";
   $(document).ready(function(){
     function debug(str){ $("#debug").append("<p>" +  str); };
 
-    ws = new WebSocket("ws://#{request.host}:#{APP_CONFIG[:socket_port]}/#{CGI::escape(current_user.id.to_s)}");
+    ws = new WebSocket("ws://#{request.host}:#{APP_CONFIG[:socket_port]}/");
 
   //Attach onmessage to websocket
     ws.onmessage = function(evt) {
       var obj = jQuery.parseJSON(evt.data);
-      //console.log(obj);
-      debug("got a " + obj['class'] + " for aspects " + obj['aspect_ids']);
 
-      if (obj['class']=="retractions"){
-        processRetraction(obj['post_id']);
+      if(obj['notice']){
+        processNotification(obj['notice']);
 
-      }else if (obj['class']=="comments"){
-        processComment(obj['post_id'], obj['html'])
-
-      }else if (obj['class']=='photos' && onPageForClass('albums')){
-        processPhotoInAlbum(obj['photo_hash'])
       }else{
-        processPost(obj['class'], obj['html'], obj['aspect_ids'])
+        debug("got a " + obj['class'] + " for aspects " + obj['aspect_ids']);
+
+        if (obj['class']=="retractions"){
+          processRetraction(obj['post_id']);
+
+        }else if (obj['class']=="comments"){
+          processComment(obj['post_id'], obj['html'], {'notification':obj['notification'], 'mine?':obj['mine?'], 'my_post?':obj['my_post?']})
+
+        }else if (obj['class']=='photos' && onPageForClass('albums')){
+          processPhotoInAlbum(obj['photo_hash'])
+        }else{
+          processPost(obj['class'], obj['html'], obj['aspect_ids'])
+        }
       }
 
     };
@@ -36,34 +41,46 @@
     };
 
   });
+
+  function processNotification(html){
+    $('#notification').html(html).fadeIn(200).delay(4000).fadeOut(200, function(){ $(this).html("");});
+  }
+
   function processRetraction(post_id){
-    $('#' + post_id ).fadeOut(500).remove();
+    $("*[data-guid='"+post_id+"']").fadeOut(400, function(){$(this).remove()});
     if($("#stream")[0].childElementCount == 0){
       $("#no_posts").fadeIn(200);
     }
   }
 
-  function processComment(post_id, html){
-    post = $('#' + post_id)[0]
-    $(' .comment_set li:last', post ).before(
+  function processComment(post_id, html, opts){
+    post = $("*[data-guid='"+post_id+"']'");
+    $('.comments li:last', post ).before(
       $(html).fadeIn("fast", function(){})
     );
     toggler = $('.show_post_comments', post)
 
-    toggler.html(
-      toggler.html().replace(/\d+/,$('.comment_set', post)[0].childElementCount -1));
+    if(toggler.length > 0){
+      toggler.html(
+        toggler.html().replace(/\d+/,$('.comments', post)[0].childElementCount -1));
 
-    if( !$(".comments", post).is(':visible') ){
-      toggler.click();
+      if( !$(".comments", post).is(':visible') ){
+        toggler.click();
+      }
     }
+
+    if( !opts['mine?'] && opts['my_post?']) {
+      processNotification(opts['notification']);
+    }
+
   }
 
   function processPost(className, html, aspectIds){
     if(onPageForAspects(aspectIds)){
       var addPostToStream = function (html){
-        $("#stream").prepend(
+        $("#stream:not('.show')").prepend(
           $(html).fadeIn("fast", function(){
-            $("#stream label:first").inFieldLabels();
+            $("#stream").find("label").first().inFieldLabels();
           })
         )
       };

@@ -11,19 +11,21 @@ class AspectsController < ApplicationController
   def index
     @posts = current_user.visible_posts(:by_members_of => :all).paginate :page => params[:page], :per_page => 15, :order => 'created_at DESC'
     @aspect = :all
-
-    @fb_access_url = MiniFB.oauth_url(FB_APP_ID, APP_CONFIG[:pod_url] + "services/create",
-                                      :scope=>MiniFB.scopes.join(","))
+    
+    if current_user.getting_started == true
+      redirect_to getting_started_path
+    end
   end
 
   def create
-    @aspect = current_user.aspect(params[:aspect])
+    @aspect = current_user.aspects.create(params[:aspect])
     if @aspect.valid?
       flash[:notice] = I18n.t('aspects.create.success')
+      respond_with @aspect
     else
       flash[:error] = I18n.t('aspects.create.failure')
+      redirect_to :back
     end
-    respond_with :location => aspects_manage_path
   end
 
   def new
@@ -48,19 +50,10 @@ class AspectsController < ApplicationController
     unless @aspect
       render :file => "#{Rails.root}/public/404.html", :layout => false, :status => 404
     else
-      @friends = @aspect.people
+      @friends = @aspect.person_objects
       @posts   = current_user.visible_posts( :by_members_of => @aspect ).paginate :per_page => 15, :order => 'created_at DESC'
       respond_with @aspect
     end
-  end
-
-  def public
-   # @fb_access_url = MiniFB.oauth_url(FB_APP_ID, APP_CONFIG[:pod_url] + "services/create",
-    #                                  :scope=>MiniFB.scopes.join(","))
-
-    @posts = current_user.visible_posts(:person_id => current_user.person.id, :public => true).paginate :page => params[:page], :per_page => 15, :order => 'created_at DESC'
-
-    respond_with @aspect
   end
 
   def manage
@@ -71,24 +64,9 @@ class AspectsController < ApplicationController
   def update
     @aspect = current_user.aspect_by_id(params[:id])
 
-    data = clean_hash(params[:aspect])
-    @aspect.update_attributes( data )
+    @aspect.update_attributes( params[:aspect] )
     flash[:notice] = I18n.t 'aspects.update.success',:name => @aspect.name
     respond_with @aspect
-  end
-
-  def move_friends
-    params[:moves].each{ |move|
-      move = move[1]
-      unless current_user.move_friend(move)
-        flash[:error] = I18n.t 'aspects.move_friends.failure', :real_name => Person.find_by_id( move[:friend_id] ).real_name
-        redirect_to aspects_manage_path
-        return
-      end
-    }
-
-    flash[:notice] = I18n.t 'aspects.move_friends.success'
-    redirect_to aspects_manage_path
   end
 
   def move_friend
@@ -104,11 +82,26 @@ class AspectsController < ApplicationController
     end
   end
 
-  private
-  def clean_hash(params)
-    return {
-      :name => params[:name]
-    }
+  def add_to_aspect
+    if current_user.add_person_to_aspect( params[:friend_id], params[:aspect_id])
+      flash[:notice] =  I18n.t 'aspects.add_to_aspect.success'
+    else 
+      flash[:error] =  I18n.t 'aspects.add_to_aspect.failure'
+    end
+
+    if params[:manage]
+      redirect_to aspects_manage_path
+    else
+      redirect_to aspect_path(params[:aspect_id])
+    end
   end
 
+  def remove_from_aspect
+    if current_user.delete_person_from_aspect( params[:friend_id], params[:aspect_id])
+      flash[:notice] =  I18n.t 'aspects.remove_from_aspect.success'
+    else 
+      flash[:error] =  I18n.t 'aspects.remove_from_aspect.failure'
+    end
+    redirect_to aspects_manage_path
+  end
 end

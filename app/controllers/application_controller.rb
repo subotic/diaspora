@@ -3,23 +3,12 @@
 #   the COPYRIGHT file.
 
 class ApplicationController < ActionController::Base
-
   protect_from_forgery :except => :receive
 
   before_filter :set_friends_and_status, :except => [:create, :update]
   before_filter :count_requests
-  before_filter :fb_user_info
   before_filter :set_invites
-
-  layout :layout_by_resource
-
-  def layout_by_resource
-    if devise_controller?
-      "session_wall"
-    else
-      "application"
-    end
-  end
+  before_filter :set_locale
 
   def set_friends_and_status
     if current_user
@@ -31,7 +20,7 @@ class ApplicationController < ActionController::Base
 
       @aspects = current_user.aspects
       @aspects_dropdown_array = current_user.aspects.collect{|x| [x.to_s, x.id]}
-      @friends = current_user.friends
+      @friends = current_user.person_objects
     end
   end
 
@@ -45,15 +34,11 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def fb_user_info
+  def set_locale
     if current_user
-      @access_token = warden.session[:access_token]
-      @logged_in = @access_token.present?
+      I18n.locale = current_user.language
+    else
+      I18n.locale = request.compatible_language_from AVAILABLE_LANGUAGE_CODES
     end
   end
-
-  def logged_into_fb?
-    @logged_in
-  end
-
 end

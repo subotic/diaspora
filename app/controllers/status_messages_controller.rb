@@ -9,44 +9,32 @@ class StatusMessagesController < ApplicationController
   respond_to :json, :only => :show
 
   def create
-    params[:status_message][:to] = params[:aspect_ids]
+    public_flag = params[:status_message][:public]
+    public_flag.to_s.match(/(true)/) ? public_flag = true : public_flag = false
+    params[:status_message][:public] = public_flag 
 
-    data = clean_hash params[:status_message]
-  
-
-    if logged_into_fb? && params[:status_message][:public] == '1'
-      id = 'me'
-      type = 'feed'
-
-      Rails.logger.info("Sending a message: #{params[:status_message][:message]} to Facebook")
-      EventMachine::HttpRequest.new("https://graph.facebook.com/me/feed?message=#{params[:status_message][:message]}&access_token=#{@access_token}").post
+    status_message = current_user.build_post(:status_message, params[:status_message])
+    if status_message.save(:safe => true)
+      raise 'MongoMapper failed to catch a failed save' unless status_message.id
+      current_user.dispatch_post(status_message, :to => params[:status_message][:to])
     end
-
-    @status_message = current_user.post(:status_message, data)
     render :nothing => true
   end
 
   def destroy
-    @status_message = current_user.find_visible_post_by_id params[:id]
-    @status_message.destroy
+    @status_message = current_user.my_posts.where(:_id =>  params[:id]).first
+    if @status_message
+      @status_message.destroy
+
+    else
+      Rails.logger.info "#{current_user.inspect} is trying to delete a post they don't own with id: #{params[:id]}"
+    end
+
     respond_with :location => root_url
   end
 
   def show
     @status_message = current_user.find_visible_post_by_id params[:id]
-    unless @status_message
-      render :status => 404
-    else
-      respond_with @status_message
-    end
-  end
-
-  private
-  def clean_hash(params)
-    return {
-      :message => params[:message],
-      :to      => params[:to],
-      :public  => params[:public]
-    }
+    respond_with @status_message
   end
 end

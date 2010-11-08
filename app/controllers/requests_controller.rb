@@ -2,6 +2,8 @@
 #   licensed under the Affero General Public License version 3 or later.  See
 #   the COPYRIGHT file.
 
+require File.join(Rails.root, 'lib/em-webfinger')
+
 class RequestsController < ApplicationController
   before_filter :authenticate_user!
   include RequestsHelper
@@ -29,37 +31,40 @@ class RequestsController < ApplicationController
     @request = Request.new
   end
 
-  def create
+ def create
     aspect = current_user.aspect_by_id(params[:request][:aspect_id])
+    account = params[:request][:destination_url].strip  
+    begin 
+      finger = EMWebfinger.new(account)
+    
+      finger.on_person{ |person|
+      
+      if person.class == Person
+        rel_hash = {:friend => person}
 
-    begin
-      rel_hash = relationship_flow(params[:request][:destination_url].strip)
-    rescue Exception => e
-      raise e unless e.message.include? "not found"
-      flash[:error] = I18n.t 'requests.create.error'
-      respond_with :location => aspect
-      return
+        Rails.logger.debug("Sending request: #{rel_hash}")
+
+        begin
+          @request = current_user.send_friend_request_to(rel_hash[:friend], aspect)
+        rescue Exception => e
+          Rails.logger.debug("error: #{e.message}")
+          flash[:error] = e.message
+        end
+      else
+        #socket to tell people this failed?
+      end
+      }
+
+    rescue Exception => e 
+      flash[:error] = e.message
     end
-
-    # rel_hash = {:friend => params[:friend_handle]}
-    Rails.logger.debug("Sending request: #{rel_hash}")
-
-    begin
-      @request = current_user.send_friend_request_to(rel_hash[:friend], aspect)
-    rescue Exception => e
-      raise e unless e.message.include? "already"
-      flash[:notice] = I18n.t 'requests.create.already_friends', :destination_url => params[:request][:destination_url]
-      respond_with :location => aspect
-      return
-    end
-
-    if @request
-      flash[:notice] =  I18n.t 'requests.create.success',:destination_url => @request.destination_url
-      respond_with :location => aspect
+    
+    if params[:getting_started]
+      redirect_to getting_started_path(:step=>params[:getting_started])
     else
-      flash[:error] = I18n.t 'requests.create.horribly_wrong'
-      respond_with :location => aspect
-    end
+      flash[:notice] = I18n.t('requests.create.tried', :account => account) unless flash[:error]
+      respond_with :location => aspects_manage_path 
+      return
+    end    
   end
-
 end

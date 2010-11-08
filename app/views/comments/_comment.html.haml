@@ -2,11 +2,11 @@
 -#   licensed under the Affero General Public License version 3 or later.  See
 -#   the COPYRIGHT file.
 
-%li.comment{:id => post.id}
-  = person_image_tag(post.person)
+%li.comment
+  = person_image_link(post.person)
   .content
     .from
       = link_to post.person.real_name, post.person
-    = post.text
+    = markdownify(post.text)
     %div.time
-      = "#{time_ago_in_words(post.updated_at)} #{t('.ago')}"
+      = "#{time_ago_in_words(post.updated_at)} #{t('ago')}"

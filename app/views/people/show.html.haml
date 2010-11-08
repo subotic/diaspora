@@ -2,37 +2,37 @@
 -#   licensed under the Affero General Public License version 3 or later.  See
 -#   the COPYRIGHT file.
 
-- content_for :page_title do
-  profile
 
-- content_for :left_pane do
-  #profile
-    .profile_photo
-      = person_image_link(@person)
-    %ul
-      -unless @posts.first.nil?
-        %li
-          %i= t(".last_seen",:how_long_ago => how_long_ago(@posts.first))
-      - if @person != current_user.person && current_user.friends.include?(@person)
-        %li
-          %i= t(".friends_since",:how_long_ago => how_long_ago(@person))
-        %li
-          = form_tag move_friend_path
-          = select :to, :to,  @aspects_dropdown_array, :selected => @aspects_with_person.first.id
-          = hidden_field_tag :from, :from, :value => @aspects_with_person.first.id
-          = hidden_field_tag :friend_id, :friend_id, :value => @person.id
-          = submit_tag t('.save')
+.span-4.append-1.last
+  = render 'profile_sidebar', :person => @person, :is_contact => @is_contact
 
-    - if @person != current_user.person && current_user.friends.include?(@person)
-      = link_to t('.remove_friend'), @person, :confirm => t('.are_you_sure'), :method => :delete, :class => "button"
+.span-15.last
+  = render 'shared/author_info', :person => @person
+  - if @contact || current_user.person == @person
 
-.span-20.last
+    - if @posts.count > 0
+      = render 'shared/stream', :posts => @posts
+      = will_paginate @posts
 
-  .span-19.last
-    - if @posts
-      %ul#stream
-        - for post in @posts
-          = render type_partial(post), :post => post unless post.class == Album
-        = will_paginate @posts
     - else
-      %h3=t('no posts to display!')
+      %h3= t('.no_posts')
+
+  - else
+    .floating
+      %h3
+        = t('.not_friends', :name => @person.real_name)
+        
+      - unless @pending_request
+        %h3
+          .description
+            = t('.request_people')
+         
+        = form_for Request.new do |f|
+          = f.select(:aspect_id, @aspects_dropdown_array)
+          = f.hidden_field :destination_url, :value => @person.diaspora_handle
+          = f.submit t('.add_friend')
+
+      - else
+        %h3
+          .description
+            = t('.already_requested', :name => @person.real_name)

@@ -3,12 +3,15 @@
 #   the COPYRIGHT file.
 
 class StatusMessage < Post
-
+  
+  validates_length_of :message, :maximum => 1000, :message => "please make your status messages less than 1000 characters"
   xml_name :status_message
   xml_accessor :message
 
   key :message, String
   validates_presence_of :message
+
+  attr_accessible :message
 
   def to_activity
         <<-XML
@@ -22,10 +25,6 @@ class StatusMessage < Post
     <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
   </entry>
         XML
-  end
-
-  def latest_hash
-    { :text => message}
   end
 end
 

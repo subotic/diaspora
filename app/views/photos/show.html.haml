@@ -2,109 +2,61 @@
 -#   licensed under the Affero General Public License version 3 or later.  See
 -#   the COPYRIGHT file.
 
-:javascript
-  $(document).keydown(function(e){
-    switch(e.keyCode) {
-    case 37:
-      if(!$("textarea").hasClass("hasfocus")){//prevent redirect if textarea has focus
-        window.location.replace( "#{url_to_prev(@photo,@album)}" );
-      }
-      break;
-    case 39:
-      if(!$("textarea").hasClass("hasfocus")){
-        window.location.replace( "#{url_to_next(@photo,@album)}" );
-      }
-      break;
-    }
-  });
+- content_for :head do
+  =javascript_include_tag 'photo'
+  
 
-  $(document).ready(function(){
-    //add a clas to verify if a textarea has focus
-    $("textarea").live('focus',function(){
-      $(this).addClass("hasfocus");
-    });
-    $("textarea").live('blur',function(){
-      $(this).removeClass("hasfocus");
-    });
+= render 'shared/author_info', :person => @photo.person, :post => @photo
 
-    //show form to add description
-    $(".edit-desc").click(function(){
-      $(".edit_photo").toggle(); 
-      //$(".caption").toggle();
-    });
+%ul#breadcrumb
+  %li= link_to "#{@photo.person.profile.first_name}'s #{t('_photos')}", person_photos_path(@photo.person)
+  %li= @photo.caption
 
-    //Add a description with ajax request
-    $("#photo_submit").click(function(evenet){
-      event.preventDefault();
-      var method = $(".edit_photo").attr("method");
-      var url = $(".edit_photo").attr("action");
-      var data = $(".edit_photo").serialize();
-      $(".description").text($("#photo_caption").val());
-      //$(".caption").toggle();
-      $(".edit_photo").toggle();
+/ we need to do next photo here
+/- if @photo.album
+/= link_to "<< #{t('.prev')}", url_to_prev(@photo, @album), :rel => 'prefetch', :id => "prev_photo"
+/|
+/= link_to "#{t('.full_size')}", @photo.url
+/|
+/= link_to "#{t('.next')} >>", url_to_next(@photo, @album), :rel => 'prefetch', :id => "next_photo"
 
-        $.ajax({  
-          type: method,
-          url: url,  
-          data: data,  
-          success: function(response){  
-            $("#add-description").remove();
-          }
-        });
+.span-14.append-1.last
+  %div{:data=>{:guid=>@photo.id}}
+    #show_photo
 
-    });
+      -if @ownership
+        .edit_pane
+          .controls{:data=>{:actor=>"#{@photo.person.owner.id}",:actor_person=>"#{@photo.person.id}",:image_url=>"#{@photo.url(:thumb_medium)}"}}
+            = link_to t('.make_profile_photo'), '#', :class => "make_profile_photo"
+          = image_tag @photo.url(:scaled_full)
 
-  });//end document ready
+      -else
+        = image_tag @photo.url(:scaled_full)
 
-= content_for :page_title do
-  = link_to "◂ #{@photo.album.name}", @photo.album
+      .caption
+        -if @ownership
+          -if @photo.caption and @photo.caption != ""
+            = link_to t('.edit_photo'),'javascript:void(0)', :id => "edit-desc", :class => "edit-desc"
+        .description
+          = @photo.caption
 
-- content_for :left_pane do
-  = render "shared/aspect_friends"
+  -if @ownership
+    %div{:class => 'clear'}
+    -if !@photo.caption or @photo.caption == ""
+      = link_to t('.add_a_description'),'javascript:void(0)', :id => "add-description", :class => "edit-desc"
 
-- content_for :publish do
-  %h1
-    = @photo.image
+  %br
+  %br
 
-  = link_to "<< #{t('.prev')}", url_to_prev(@photo, @album)
-  |
-  = link_to "#{t('.full_size')}", @photo.url
-  |
-  = link_to "#{t('.next')} >>", url_to_next(@photo, @album)
+  = form_for @photo do |p|
+    = p.text_field :caption, :value => @photo.caption
+    = p.submit t('.update_photo')
+    %div{:class => 'clear'}
 
-  .right
-    -if current_user.owns? @album
-      = link_to t('.edit_photo'), edit_photo_path(@photo), :class => "button"
+  -if @ownership
+    = link_to t('.delete_photo'), @photo, :confirm => t('are_you_sure'), :method => :delete, :class => 'button'
 
-%div{:id => @photo.id}
-  #show_photo
-    = linked_scaled_photo @photo, @album
-    .caption
-      -if current_user.owns? @album
-        -if @photo.caption and @photo.caption != ""
-          = link_to 'Edit','javascript:void(0)', :id => "edit-desc", :class => "edit-desc"
-      .description
-        = @photo.caption
-
-    -if current_user.owns? @album
-      %div{:class => 'clear'}
-      -if !@photo.caption or @photo.caption == ""
-        = link_to 'Add a description','javascript:void(0)', :id => "add-description", :class => "edit-desc"
-
-    = form_for @photo do |p|
-      = p.text_field :caption, :value => @photo.caption
-      = p.submit
-      %div{:class => 'clear'}
-
-  #content_bottom
-    .back
-      = link_to "⇧ #{@album.name}", album_path(@album)
-
-    -if current_user.owns? @album
-      .right
-        = link_to t('.delete_photo'), @photo, :confirm => t('.are_you_sure'), :method => :delete, :class => 'button'
-
-  %h4{:class => "show_post_comments"}
-    = "#{t('.comments')} (#{@photo.comments.count})"
-  = render "comments/comments", :post => @photo
-
+.span-9.last
+  #stream.show
+    %li.message{:data=>{:guid=>@photo.id}}
+      = render "comments/comments", :post => @photo
